@@ -187,13 +187,22 @@ def run_helper(sub_cmd, vol_info=None):
         return supervdsm.getProxy().managedvolume_run_helper(
             sub_cmd, vol_info=vol_info)
     try:
+        adapter = None
         cmd_input = None
         if vol_info:
             cmd_input = json.dumps(vol_info).encode("utf-8")
+            adapter = vol_info.get("connection_info", {}).get("adapter")
+        helper = HELPER
+        if adapter:
+            helper = f"{HELPER}-{adapter}"
+            if not os.path.exists(helper):
+                raise se.ManagedVolumeHelperFailed(
+                    f"Helper for adapter '{adapter}' not found"
+                    f" at '{helper}'")
         # This is the only sane way to run python scripts that work with both
         # python2 and python3 in the tests.
         # TODO: Remove when we drop python 2.
-        cmd = [sys.executable, HELPER, sub_cmd]
+        cmd = [sys.executable, helper, sub_cmd]
         result = commands.run(cmd, input=cmd_input)
     except cmdutils.Error as e:
         raise se.ManagedVolumeHelperFailed("Error executing helper: %s" % e)
