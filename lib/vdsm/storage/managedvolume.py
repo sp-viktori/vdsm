@@ -389,9 +389,11 @@ def _run_link_exists(sd_id, vol_id):
 
 def _remove_run_link(sd_id, vol_id):
     try:
-        run_path = _run_link(sd_id, vol_id)
-        if os.path.exists(run_path):
-            os.remove(run_path)
+        # lexists, not exists: detach removes the device this link points at
+        # before we get here, so following the link would report it missing and
+        # leak it. _run_link_exists() already has the right semantics.
+        if _run_link_exists(sd_id, vol_id):
+            os.remove(_run_link(sd_id, vol_id))
     except OSError:
         log.exception("Failed to remove run link for volume %s", vol_id)
 
